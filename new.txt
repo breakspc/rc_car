@@ -6,14 +6,7 @@
 #define B_BAL 1         // 모터B의 균형 계수 (속도 보정값)
 #define M_SPEED 100     // 모터 초기 기본 속도 (PWM 값, 0~255)
 
-// "홀드(hold)" 동작을 위한 타임아웃 (ms).
-// 원격 앱/컨트롤러가 버튼을 누르고 있는 동안 계속해서 문자(예: 'F')를 전송하면,
-// 이 타임아웃이 갱신되어 모터가 계속 동작합니다.
-// 반대로 입력이 끊기면 이 시간 이후 자동으로 정지합니다.
-const unsigned long HOLD_TIMEOUT = 300; // 필요하면 조정하세요 (밀리초)
-
-unsigned long lastCmdMillis = 0; // 마지막으로 명령을 받은 시각 (millis)
-unsigned char lastCmd = 0;       // 마지막 명령 저장
+// 타임아웃 제거: 꾹 누를때 자동 정지하지 않음
 
 // 모터의 회전 방향 및 속도 전역 변수
 unsigned char m_a_spd = 0, m_b_spd = 0; // PWM 속도 값 (0~255)
@@ -26,7 +19,7 @@ void setup() {
   pinMode(MOTOR_B_DIR, OUTPUT); // 모터B 방향 핀 출력으로 설정
   // PWM 핀은 analogWrite에서 자동으로 설정되므로 pinMode 불필요
 
-  Serial.println("Hello! (hold mode)"); // 모터 작동 확인용 문자 출력
+  Serial.println("Hello! (hold mode disabled timeout)"); // 모터 작동 확인용 문자 출력
 }
 
 void loop() {
@@ -34,18 +27,8 @@ void loop() {
 
   if (Serial.available()) { // 시리얼 데이터가 입력되었을 때
     bt_cmd = (unsigned char)Serial.read(); // 변수에 입력된 데이터 저장
-    lastCmd = bt_cmd;
-    lastCmdMillis = millis(); // 명령을 받은 시각 갱신
 
     rc_ctrl_val(bt_cmd);       // 받은 명령으로 모터 상태 설정
-  } else {
-    // 일정 시간 동안 아무 입력도 없으면 "홀드" 해제 — 모터 정지
-    if (millis() - lastCmdMillis > HOLD_TIMEOUT) {
-      // 이미 정지 상태가 아니면 정지로 설정
-      if (m_a_spd != 0 || m_b_spd != 0) {
-        stopMotors();
-      }
-    }
   }
 
   motor_drive();    // 현재 설정된 방향/속도를 실제 핀에 출력
