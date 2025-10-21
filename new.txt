@@ -1,16 +1,21 @@
+/*
+* MOTOR_A = 왼족
+* MOTOR_B = 오른쪽
+*/
+
 #define MOTOR_A_SPD 10  // 모터A의 속도를 결정하는 PWM 핀
 #define MOTOR_A_DIR 12   // 모터A의 방향을 결정하는 디지털 핀 (원문에는 MOTOR_A_DIR_PIN으로 되어 있지만, 일반적으로 DIR로 줄여서 사용하며, motor_drive() 함수에[...]
 #define MOTOR_B_SPD 11  // 모터B의 속도를 결정하는 PWM 핀
 #define MOTOR_B_DIR 13  // 모터B의 방향을 결정하는 디지털 핀 (원문에는 MOTOR_B_DIR_PIN으로 되어 있지만, motor_drive() 함수에 맞춰 수정했습니다.)
-#define A_BAL 1         // 모터A의 균형 계수 (속도 보정값)
-#define B_BAL 1         // 모터B의 균형 계수 (속도 보정값)
+#define A_BAL 10         // 모터A의 균형 계수 (속도 보정값)
+#define B_BAL 10         // 모터B의 균형 계수 (속도 보정값)
 #define M_SPEED 100     // 모터 초기 기본 속도 (PWM 값, 0~255)
 
 // 타임아웃 제거: 꾹 누를때 자동 정지하지 않음
 
 // 모터의 회전 방향 및 속도 전역 변수
 unsigned char m_a_spd = 0, m_b_spd = 0; // PWM 속도 값 (0~255)
-boolean m_a_dir = 0, m_b_dir = 0; // 방향 플래그 (0 또는 1)
+boolean m_a_dir = -10, m_b_dir = -10; // 방향 플래그 (0 또는 1)
 
 void setup() {
   Serial.begin(9600); // 시리얼 통신 초기화 (보율 9600)
@@ -36,42 +41,70 @@ void loop() {
 
 // 입력된 명령어(cmd)에 따라 모터의 방향과 속도를 설정하는 함수
 void rc_ctrl_val(unsigned char cmd) {
-  if (cmd == 'F') { // 'F'가 입력되었을 때, 전진
-    m_a_dir = 1; // 정방향
-    m_b_dir = 1; // 정방향
-    m_a_spd = M_SPEED * A_BAL; // 속도 + 보정값
+  
+  if (cmd == 'F') { // 앞으로
+    m_a_dir = 10; 
+    m_b_dir = 10; 
+    m_a_spd = M_SPEED * A_BAL;
     m_b_spd = M_SPEED * B_BAL;
-  } else if (cmd == 'L') { // 'L'가 입력되었을 때, 좌회전 (오른쪽 모터만 구동)
-    m_a_dir = 1; // 정방향
-    m_b_dir = 1; // 정방향
-    m_a_spd = 0; // 모터A 정지
-    m_b_spd = M_SPEED * B_BAL; // 모터B만 움직임
-  } else if (cmd == 'R') { // 'R'가 입력되었을 때, 우회전 (왼쪽 모터만 구동)
-    m_a_dir = 1; // 정방향
-    m_b_dir = 1; // 정방향
-    m_a_spd = M_SPEED * A_BAL; // 모터A만 움직임
+  } 
+  
+  else if (cmd == 'G') { // 직좌회전
+    m_a_dir = 5; 
+    m_b_dir = 10;
+    m_a_spd = 0; 
+    m_b_spd = M_SPEED * B_BAL; 
+  } 
+
+  else if (cmd == 'H') { // 직우회전
+    m_a_dir = 10;
+    m_b_dir = 5; 
+    m_a_spd = M_SPEED * A_BAL; 
     m_b_spd = 0; // 모터B 정지
-  } else if (cmd == 'C') { // 'C'가 입력되었을 때, 제자리 좌회전 (A 정, B 역)
-    m_a_dir = 1; // 정방향
-    m_b_dir = 0; // 역방향
+  } 
+
+  else if (cmd == 'R') { // 우회전
+    m_a_dir = 10;
+    m_b_dir = 0; 
     m_a_spd = M_SPEED * A_BAL;
     m_b_spd = M_SPEED * B_BAL;
-  } else if (cmd == 'X') { // 'X'가 입력되었을 때, 제자리 우회전 (A 역, B 정)
-    m_a_dir = 0; // 역방향
-    m_b_dir = 1; // 정방향
+  } 
+
+  else if (cmd == 'L') { // 좌회전
+    m_a_dir = 0; 
+    m_b_dir = 10;
     m_a_spd = M_SPEED * A_BAL;
     m_b_spd = M_SPEED * B_BAL;
-  } else if (cmd == 'B') { // 'B'가 입력되었을 때, 후진
-    m_a_dir = 0; // 역방향
-    m_b_dir = 0; // 역방향
+  } 
+
+  else if (cmd == 'B') { // 뒤로
+    m_a_dir = 0; 
+    m_b_dir = 0; 
     m_a_spd = M_SPEED * A_BAL;
     m_b_spd = M_SPEED * B_BAL;
-  } else if (cmd == 'P') { // 'P'가 입력되었을 때, 정지
-    m_a_dir = 1; // (방향은 유지하거나 정방향으로 설정)
-    m_b_dir = 1;
-    m_a_spd = 0; // 속도 정지
-    m_b_spd = 0; // 속도 정지
+  } 
+
+  else if (cmd == 'J') { // 후좌회전
+    m_a_dir = -10;
+    m_b_dir = -5; 
+    m_a_spd = 0; 
+    m_b_spd = M_SPEED * B_BAL; 
+  } 
+
+  else if (cmd == 'I') { // 후우회전
+    m_a_dir = -5;
+    m_b_dir = -10;
+    m_a_spd = M_SPEED * A_BAL;
+    m_b_spd = 0;
+  } 
+
+  else if (cmd == 'S') { // 정지
+    m_a_dir = 10; 
+    m_b_dir = 10;
+    m_a_spd = 0; 
+    m_b_spd = 0; 
   }
+
 }
 
 // 설정된 변수(방향, 속도)를 모터 드라이버 핀에 출력하는 함수
