@@ -1,0 +1,118 @@
+// 2-motor 버전: 모터 A/B는 속도 핀(PWM)과 방향 핀으로 제어
+// 부저가 부팅 시 울리지 않도록 setup에서 명시적 초기화 추가
+
+#define MOTOR_A_SPD 10  // 모터A의 속도 핀 (PWM)
+#define MOTOR_A_DIR 12  // 모터A의 방향 핀
+#define MOTOR_B_SPD 11  // 모터B의 속도 핀 (PWM)
+#define MOTOR_B_DIR 13  // 모터B의 방향 핀
+
+#define A_BAL 10        // 모터A의 균형 계수 (속도 보정값, 정수: 음수/양수 가능)
+#define B_BAL 10        // 모터B의 균형 계수 (속도 보정값, 정수: 음수/양수 가능)
+
+const int buzPin = 4;  // Buzzer pin
+const int ledPin = A5; // LED pin
+
+int valSpeed = 255;    // 기본 속도 (0-255)
+
+void setup() {
+    Serial.begin(9600);
+
+    // 부저 및 LED 초기화 — 부저가 부팅 시 울리는 문제를 방지
+    pinMode(buzPin, OUTPUT);
+    digitalWrite(buzPin, LOW); // 부저가 active-HIGH 타입이면 LOW로 끔. (active-LOW일 경우 HIGH로 바꿔보세요)
+
+    pinMode(ledPin, OUTPUT);
+    digitalWrite(ledPin, LOW);
+
+    // 모터 핀 설정
+    pinMode(MOTOR_A_DIR, OUTPUT);
+    pinMode(MOTOR_B_DIR, OUTPUT);
+    pinMode(MOTOR_A_SPD, OUTPUT);
+    pinMode(MOTOR_B_SPD, OUTPUT);
+
+    // 모터 정지 (PWM 0)
+    analogWrite(MOTOR_A_SPD, 0);
+    analogWrite(MOTOR_B_SPD, 0);
+
+    // 방향 기본값 (정지 시 안전한 상태)
+    digitalWrite(MOTOR_A_DIR, LOW);
+    digitalWrite(MOTOR_B_DIR, LOW);
+}
+
+// 직진/후진/회전 등을 디지털 방향 + PWM 속도로 제어
+void loop() {
+    while (Serial.available() > 0) {
+        char command = Serial.read();
+        Serial.println(command);
+
+        switch(command) {
+            case 'F':   // Move forward
+                digitalWrite(MOTOR_A_DIR, HIGH);
+                digitalWrite(MOTOR_B_DIR, HIGH);
+                SetSpeed(valSpeed);
+                break;
+
+            case 'B':   // Move backward
+                digitalWrite(MOTOR_A_DIR, LOW);
+                digitalWrite(MOTOR_B_DIR, LOW);
+                SetSpeed(valSpeed);
+                break;
+
+            case 'R':   // Turn right (좌 모터 앞으로, 우 모터 뒤로)
+                digitalWrite(MOTOR_A_DIR, HIGH); // 왼쪽 forward
+                digitalWrite(MOTOR_B_DIR, LOW);  // 오른쪽 backward
+                SetSpeed(valSpeed);
+                break;
+
+            case 'L':   // Turn left (좌 모터 뒤로, 우 모터 앞으로)
+                digitalWrite(MOTOR_A_DIR, LOW);
+                digitalWrite(MOTOR_B_DIR, HIGH);
+                SetSpeed(valSpeed);
+                break;
+
+            case 'S':   // Stop
+                analogWrite(MOTOR_A_SPD, 0);
+                analogWrite(MOTOR_B_SPD, 0);
+                break;
+
+            case 'Y':   // Honk horn
+                digitalWrite(buzPin, HIGH);
+                delay(300);
+                digitalWrite(buzPin, LOW);
+                break;
+
+            case 'X':   // Headlight ON
+                digitalWrite(ledPin, HIGH);
+                break;
+
+            case 'x':   // Headlight OFF
+                digitalWrite(ledPin, LOW);
+                break;
+
+            // 속도 설정: 0-9
+            case '0': SetSpeed(0); break;
+            case '1': SetSpeed(25); break;
+            case '2': SetSpeed(50); break;
+            case '3': SetSpeed(75); break;
+            case '4': SetSpeed(100); break;
+            case '5': SetSpeed(125); break;
+            case '6': SetSpeed(150); break;
+            case '7': SetSpeed(175); break;
+            case '8': SetSpeed(200); break;
+            case '9': SetSpeed(255); break;
+        }
+    }
+}
+
+// 속도 설정 함수: A_BAL / B_BAL을 더해 양쪽 모터를 보정
+void SetSpeed(int val) {
+    valSpeed = constrain(val, 0, 255);
+    int spdA = valSpeed + A_BAL;
+    int spdB = valSpeed + B_BAL;
+
+    spdA = constrain(spdA, 0, 255);
+    spdB = constrain(spdB, 0, 255);
+
+    analogWrite(MOTOR_A_SPD, spdA);
+    analogWrite(MOTOR_B_SPD, spdB);
+}
