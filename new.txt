@@ -113,6 +113,19 @@ void rc_ctrl_val(unsigned char cmd) {
     digitalWrite(buzPin, LOW);
   }
 
+  else if (cmd == 'X') { // 궁 O
+    m_a_dir = 0; 
+    m_b_dir = 10;
+    m_a_spd = M_SPEED * A_BAL;
+    m_b_spd = M_SPEED * B_BAL;
+  }
+
+  else if (cmd == 'x') { // 궁 X
+    m_a_dir = 10; 
+    m_b_dir = 10;
+    m_a_spd = 0; 
+    m_b_spd = 0;
+  }
 
 }
 
